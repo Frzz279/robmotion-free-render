@@ -10,6 +10,7 @@ canvas{display:block;filter:contrast(1.12) saturate(1.25) brightness(1.04)}
 </style></head><body><div id="vg"></div><div id="sub"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="story.js"></script>
+<script src="timing.js"></script>
 <script>
 /* ===== GAYA VISUAL (ubah di sini, berlaku untuk semua naskah) ===== */
 const MOODS={
@@ -135,6 +136,13 @@ function makeProp(o){
 
 /* ===== BANGUN ADEGAN ===== */
 const ST=window.STORY,scenes=[];let acc=0;
+/* SINKRON SUARA: jika timing.js ada (dibuat otomatis dari voice.mp3), waktu adegan & subtitle mengikuti suara */
+if(window.TIMING&&TIMING.length){const T=TIMING,N=T.length,sc=ST.scenes.filter(s=>(s.say||'').trim());
+ const cnt=sc.map(s=>s.say.trim().split(/\s+/).length),tot=cnt.reduce((a,b)=>a+b,0);let c=0;
+ sc.forEach((s,i)=>{const a=Math.min(N-1,Math.round(c/tot*N)),b=Math.max(a+1,Math.round((c+cnt[i])/tot*N)),m=T.slice(a,Math.min(b,N));c+=cnt[i];
+  s.t0=i?T[a].s:0;s.wt=Array.from({length:cnt[i]},(_,j)=>Math.max(0,m[Math.min(m.length-1,Math.floor(j*m.length/cnt[i]))].s-s.t0));});
+ const end=(window.AUDIO_DUR||T[N-1].e)+.6;
+ sc.forEach((s,i)=>{s.dur=Math.max(.5,(i<sc.length-1?sc[i+1].t0:end)-s.t0);});}
 ST.scenes.forEach(s=>{
  const g=new THREE.Group();g.visible=false;S.add(g);
  if(s.mood!=='indoor'&&s.scenery!==false)for(let i=0;i<18;i++){const hs=i%4===0;g.add(makeProp({t:hs?'house':'tree',color:hs?[0xe8d9b5,0xd6e4f0,0xf1c6a0][i%3]:undefined,roof:[0xb03a2e,0x34495e,0x7d5a3c][i%3],p:[(i%2?1:-1)*(14+rnd()*34),0,-16-rnd()*55],ry:rnd()*.6-.3}));}
@@ -155,6 +163,7 @@ window.renderAt=async t=>{
  S.background=new THREE.Color(m.sky);S.fog=new THREE.Fog(SKY[mn][1],m.fog[0],m.fog[1]);
  hemi.intensity=m.hemi;sun.intensity=m.sun;const gk=mn+(s.floor||'')+(s.ground||'');if(ground.userData.k!==gk){ground.userData.k=gk;ground.material.map=pat(s.floor||(mn==='indoor'?'plank':'grass'),s.ground??m.ground,[75,75]);ground.material.needsUpdate=true;}
  if(skyM.userData.m!==mn){skyM.userData.m=mn;skyM.material.map=skyTex(mn);skyM.material.needsUpdate=true;}
+ let wj=-1,pulse=0;if(s.wt){while(wj+1<s.wt.length&&s.wt[wj+1]<=lt)wj++;if(wj>=0)pulse=Math.max(0,1-(lt-s.wt[wj])/.18);}
  sc.chars.forEach(c=>{const o=c.userData.o,p=V(o.p??[0,0,0],o.to,e);
   c.position.set(p[0],p[1]||0,p[2]);c.rotation.y=o.ry??0;
   [c.armL,c.armR,c.legL,c.legR].forEach(l=>l.rotation.set(0,0,0));c.children.forEach(k=>{});
@@ -163,12 +172,12 @@ window.renderAt=async t=>{
   else if(a==='wave'){c.armR.rotation.z=2.7+Math.sin(t*10)*.3;}
   else if(a==='point'){c.armR.rotation.x=-1.57;}
   else if(a==='panic'){c.armL.rotation.z=-2.6+Math.sin(t*20)*.3;c.armR.rotation.z=2.6-Math.sin(t*20)*.3;}
-  else{c.position.y+=Math.sin(t*3)*.05;}});
+  else{c.position.y+=Math.sin(t*3)*.05;}if(o.talk)c.position.y+=pulse*.25;});
  const k=s.cam||{from:[0,5,14],look:[0,4,0]},cp=V(k.from,k.to,e),lk=V(k.look,k.look2,e),sh=(k.shake||0)*Math.sin(t*45);
  C.fov=k.fov??50;C.updateProjectionMatrix();
  C.position.set(cp[0]+sh,cp[1]+sh*.7,cp[2]);C.lookAt(lk[0],lk[1],lk[2]);
  const w=(s.say||'').trim().split(/\s+/).filter(Boolean);
- sub.textContent=w.length?w[Math.min(w.length-1,Math.floor(u*w.length))]:'';
+ sub.textContent=s.wt?(wj>=0?w[wj]:''):(w.length?w[Math.min(w.length-1,Math.floor(u*w.length))]:'');
  R.render(S,C);
  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 };
