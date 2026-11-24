@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RobMotion 3D Test</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { overflow: hidden; background: #101827; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9bc8ed);
+scene.fog = new THREE.Fog(0x9bc8ed, 15, 45);
+
+const camera = new THREE.PerspectiveCamera(
+  45, 1080 / 1920, 0.1, 100
+);
+camera.position.set(7, 5, 9);
+camera.lookAt(0, 1.5, 0);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  preserveDrawingBuffer: true
+});
+renderer.setSize(1080, 1920);
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x526078, 2));
+
+const sun = new THREE.DirectionalLight(0xffe2b5, 3);
+sun.position.set(-5, 10, 7);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+scene.add(sun);
+
+function block(w, h, d, color, x, y, z) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.8
+    })
+  );
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+  return mesh;
+}
+
+// Ground
+block(30, 0.5, 30, 0x527c4c, 0, -0.3, 0);
+
+// Roblox-style character
+const character = new THREE.Group();
+scene.add(character);
+
+// Legs
+block(0.55, 1.2, 0.55, 0x243d68, -0.32, 0.6, 0);
+block(0.55, 1.2, 0.55, 0x243d68, 0.32, 0.6, 0);
+
+// Torso
+block(1.3, 1.35, 0.65, 0x2879d5, 0, 1.9, 0);
+
+// Arms
+const leftArm = block(
+  0.42, 1.3, 0.45, 0xe8b77d, -0.9, 1.9, 0
+);
+const rightArm = block(
+  0.42, 1.3, 0.45, 0xe8b77d, 0.9, 1.9, 0
+);
+
+// Head
+block(1.05, 1.05, 1.05, 0xe8b77d, 0, 3.15, 0);
+
+// Hair
+block(1.08, 0.22, 1.08, 0x33251e, 0, 3.72, 0);
+
+// Eyes
+block(0.12, 0.12, 0.04, 0x202020, -0.23, 3.25, 0.54);
+block(0.12, 0.12, 0.04, 0x202020, 0.23, 3.25, 0.54);
+
+// Background trees
+for (let i = 0; i < 8; i++) {
+  const x = (i % 4) * 5 - 8;
+  const z = Math.floor(i / 4) * -5 - 4;
+  block(0.5, 2, 0.5, 0x65452e, x, 1, z);
+  block(2.2, 2.2, 2.2, 0x286b3d, x, 3, z);
+}
+
+window.duration = 6;
+
+window.renderAt = function(time) {
+  character.position.y = Math.abs(Math.sin(time * 3)) * 0.18;
+
+  camera.position.x = 7 + Math.sin(time * 0.5) * 1.5;
+  camera.position.z = 9 + Math.cos(time * 0.5) * 1.5;
+  camera.lookAt(0, 1.7, 0);
+
+  renderer.render(scene, camera);
+};
+
+window.renderAt(0);
+</script>
+</body>
+</html>
