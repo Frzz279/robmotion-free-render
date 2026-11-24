@@ -13,44 +13,50 @@ const OUTPUT = path.resolve("output.mp4");
 const FRAMES = path.resolve("frames");
 
 if (!fs.existsSync(INPUT)) {
-  throw new Error("File index.html tidak ditemukan.");
+  throw new Error("index.html tidak ditemukan");
 }
 
 fs.rmSync(FRAMES, { recursive: true, force: true });
 fs.mkdirSync(FRAMES, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--enable-webgl",
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader"
+  ]
+});
+
 const page = await browser.newPage({
   viewport: { width: WIDTH, height: HEIGHT },
   deviceScaleFactor: 1
 });
 
-await page.goto(pathToFileURL(INPUT).href);
-await page.waitForTimeout(1000);
+page.on("console", msg => {
+  if (msg.type() === "error") console.error(msg.text());
+});
 
-const duration = await page.evaluate(() => window.duration);
+await page.goto(pathToFileURL(INPUT).href, {
+  waitUntil: "networkidle",
+  timeout: 60000
+});
 
-if (!Number.isFinite(duration) || duration <= 0) {
-  throw new Error("window.duration tidak ditemukan atau tidak valid.");
-}
-
-const renderAtExists = await page.evaluate(
+await page.waitForFunction(
   () => typeof window.renderAt === "function"
+    && Number.isFinite(window.duration),
+  { timeout: 60000 }
 );
 
-if (!renderAtExists) {
-  throw new Error("Fungsi window.renderAt tidak ditemukan.");
-}
-
+const duration = await page.evaluate(() => window.duration);
 const totalFrames = Math.ceil(duration * FPS);
 
 for (let i = 0; i < totalFrames; i++) {
-  const time = i / FPS;
-
-  await page.evaluate(async (t) => {
-    await window.renderAt(t);
-    await new Promise(requestAnimationFrame);
-  }, time);
+  await page.evaluate(async time => {
+    await window.renderAt(time);
+  }, i / FPS);
 
   await page.screenshot({
     path: path.join(
@@ -73,7 +79,7 @@ const result = spawnSync("ffmpeg", [
 ], { stdio: "inherit" });
 
 if (result.status !== 0) {
-  throw new Error("Proses encoding MP4 gagal.");
+  throw new Error("Gagal membuat MP4");
 }
 
-console.log("Video berhasil dibuat:", OUTPUT);
+console.log("Berhasil:", OUTPUT);
