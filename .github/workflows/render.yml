@@ -1,8 +1,11 @@
-
 name: RobMotion Cloud Render
 
 on:
   workflow_dispatch:
+    inputs:
+      language:
+        description: "Bahasa suara (id, en, auto)"
+        default: "id"
 
 permissions:
   contents: read
@@ -25,6 +28,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Align voice-over
+        run: |
+          VOICE=$(ls voice.* 2>/dev/null | head -n1 || true)
+          if [ -n "$VOICE" ]; then
+            pip install faster-whisper
+            python3 align.py "$VOICE" "${{ inputs.language }}"
+          else
+            echo "" > timing.js
+          fi
+
       - name: Install dependencies
         run: |
           npm install
@@ -33,9 +46,18 @@ jobs:
       - name: Render MP4
         run: npm run render
 
+      - name: Add voice-over
+        run: |
+          VOICE=$(ls voice.* 2>/dev/null | head -n1 || true)
+          if [ -n "$VOICE" ]; then
+            ffmpeg -y -i output.mp4 -i "$VOICE" -map 0:v -map 1:a -c:v copy -c:a aac -af apad -shortest final.mp4
+          else
+            cp output.mp4 final.mp4
+          fi
+
       - name: Upload video
         uses: actions/upload-artifact@v4
         with:
           name: robmotion-video
-          path: output.mp4
+          path: final.mp4
           if-no-files-found: error
