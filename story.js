@@ -10,8 +10,8 @@ const K=(f,t,l,x)=>({from:f,to:t,look:l,...x});
 const cl=(x,d=7)=>K([x+1.5,5,d+3],[x+.6,5.2,d],[x,4.6,0],{fov:42});
 const GREEN='#3ddc84';
 const TOWN=[{t:'road',p:[0,0,9],ry:1.5708,w:6,len:120},{t:'house',p:[-13,0,-10],color:0xd6e4f0,roof:0x34495e},
- {t:'house',p:[13,0,-10],color:0xf1c6a0,roof:0xb03a2e},{t:'lamp',p:[8,0,-4]},{t:'bush',p:[-7,0,-6]},{t:'tree',p:[-18,0,-4]}];
-const ROOM=[{t:'box',p:[0,0,-9],w:44,h:14,d:1,color:0x3a3f4b,k:'brick'},...[...Array(11)].map((_,i)=>
+ {t:'house',p:[13,0,-10],color:0xf1c6a0,roof:0xb03a2e},{t:'lamp',p:[8,0,-4]},{t:'bush',p:[-7,0,-6]},{t:'tree',p:[-18,0,-4]},{t:'car',p:[-9,0,10.5],ry:1.5708,color:0xc0392b},{t:'mailbox',p:[5,0,-2]}];
+const ROOM=[{t:'room',p:[0,0,2],w:44,d:22,h:14,color:0x4a4f5c,wall:'brick'},...[...Array(11)].map((_,i)=>
  ({t:'sign',p:[-18+i*3.6,0,-7],w:2.6,h:2,text:String(1000+i*137),bg:'#06121f',fg:GREEN}))];
 const sg=(text,o={})=>({t:'sign',p:[0,0,0],w:6,h:4.5,text,bg:'#06121f',fg:GREEN,...o});
 const sc=(say,o)=>({dur:3,mood:'day',props:TOWN,say,...o});
