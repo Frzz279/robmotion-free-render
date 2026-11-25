@@ -28,12 +28,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Align voice-over
         run: |
           VOICE=$(ls voice.* 2>/dev/null | head -n1 || true)
           if [ -n "$VOICE" ]; then
-            pip install faster-whisper
-            python3 align.py "$VOICE" "${{ inputs.language }}"
+            python -m pip install faster-whisper
+            python align.py "$VOICE" "${{ inputs.language }}"
           else
             echo "" > timing.js
           fi
