@@ -5,7 +5,7 @@ on:
     inputs:
       language:
         description: "Bahasa suara (id, en, auto)"
-        default: "id"
+        default: "en"
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
         run: |
           VOICE=$(ls voice.* 2>/dev/null | head -n1 || true)
           if [ -n "$VOICE" ]; then
-            ffmpeg -y -i "$VOICE" -af "silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.7:stop_threshold=-45dB:stop_silence=0.35" voice_clean.wav
+            ffmpeg -y -i "$VOICE" -af "silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.25:stop_threshold=-50dB:stop_silence=0.1" voice_clean.wav
           fi
 
       - name: Align voice-over
